@@ -34,6 +34,7 @@ import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.api.logging.configuration.ConsoleOutput;
 import org.gradle.api.logging.configuration.WarningMode;
+import org.gradle.integtests.fixtures.FileSystemWatchingHelper;
 import org.gradle.integtests.fixtures.RepoScriptBlockUtil;
 import org.gradle.integtests.fixtures.daemon.DaemonLogsAnalyzer;
 import org.gradle.internal.ImmutableActionSet;
@@ -214,6 +215,18 @@ public abstract class AbstractGradleExecuter implements GradleExecuter, Resettab
         this.gradleUserHomeDir = buildContext.getGradleUserHomeDir();
         this.daemonBaseDir = buildContext.getDaemonBaseDir();
         this.daemonCrashLogsBeforeTest = ImmutableSet.copyOf(DaemonLogsAnalyzer.findCrashLogs(daemonBaseDir));
+        waitForChangesToBePickedUpBeforeExecution();
+    }
+
+    private void waitForChangesToBePickedUpBeforeExecution() {
+        // File system watching is now on by default, so we need to wait for changes to be picked up before each execution.
+        beforeExecute(executer -> {
+            try {
+                FileSystemWatchingHelper.waitForChangesToBePickedUp();
+            } catch (InterruptedException e) {
+                throw UncheckedException.throwAsUncheckedException(e);
+            }
+        });
     }
 
     protected Logger getLogger() {
